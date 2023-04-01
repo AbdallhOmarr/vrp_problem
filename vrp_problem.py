@@ -203,7 +203,13 @@ class Solution:
                 else:
                     duplicated_customers.append({"customer":customer,"route_idx":route_idx})
 
-       for customer,route_idx in enumerate()
+       for customer,route_idx in enumerate(duplicated_customers):
+           route = self.routes[route_idx]
+           route_customers_array = route.customers_array
+           for row in route_customers_array.copy():
+               if customer == row[0]:
+                    route_customers_array = np.delete(route_customers_array, i, axis=0)
+
 
     def get_total_solution_distance(self):
         self.total_distance = 0
