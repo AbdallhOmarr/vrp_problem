@@ -203,13 +203,21 @@ class Solution:
                 else:
                     duplicated_customers.append({"customer":customer,"route_idx":route_idx})
 
-       for customer,route_idx in enumerate(duplicated_customers):
+       
+        for customer,route_idx in enumerate(duplicated_customers):
            route = self.routes[route_idx]
            route_customers_array = route.customers_array
-           for row in route_customers_array.copy():
+           rows_to_delete = [] 
+           for i,row in enumerate(route_customers_array.copy()):
                if customer == row[0]:
-                    route_customers_array = np.delete(route_customers_array, i, axis=0)
+                    rows_to_delete.append(i)
+            route_customers_array = np.delete(route_customers_array, rows_to_delete, axis=0)
 
+            self.routes[route_idx].customers_array = route_customers_array
+            self.routes[route_idx].update_route_variables()
+
+            self.update_variables()
+                    
 
     def get_total_solution_distance(self):
         self.total_distance = 0
@@ -232,10 +240,36 @@ class Solution:
         return self.feasibility
 
 
+    def get_total_customers_served(self):
+        self.customers_served = []
+        for route in self.routes:
+            self.customers_served + = route.get_total_customers_served()
+        self.total_customers_served = len(self.customers_served)
+        return self.total_customers_served 
+
+    def get_number_of_routes(self):
+        self.no_of_routes = len(self.routes)
+        return self.no_of_routes
+
+    def fitness_func(self):
+        self.update_variables()
+        self.fitness_value = self.check_feasibility()*(self.total_customers_served*1000 - self.total_distance)
+        return self.fitness_value
+
 
     def update_variables(self):
         self.get_total_solution_distance()
         self.check_feasibility()
+        self.get_total_customers_served()
+
+
+
+
+
+
+
+
+        
 
 
 
@@ -245,26 +279,22 @@ class Solution:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def get_routes(customers_df,n_clusters,DEPOT):
-    routes = []
+def get_routes(customers_array,n_clusters):
+    routes =[]
     for n in range(n_clusters):
-        routes.append(Route(customers_df[customers_df["cluster"]==n].reset_index().drop(columns="index"),DEPOT))
+        route_customers = customers_array[customers_array[:, 8] == n]
+        route = Route(route_customers)
+        routes.append(route)
 
     return routes
+
+def generate_initial_population(customers_array,POPULATION_SIZE,n_cluster):
+    population = []
+    for i in range(POPULATION_SIZE):
+        clustered_customers_array = cluster_array(customers_array,n_cluster)
+        routes = get_routes(clustered_customers_array,n_cluster)
+        sol = Solution(routes)
+        sol.prevent_duplicated_customers()
 
 
 def generate_initial_population(customers_df,POPULATION_SIZE,n_clusters,DEPOT):
