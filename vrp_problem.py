@@ -1,4 +1,3 @@
-
 import pandas as pd
 import re
 import matplotlib.pyplot as plt
@@ -99,35 +98,138 @@ class Route:
         self.current_time = 0
 
     def get_customers_ids(self):
-        return self.customers_array[:,0]
+        self.customers_ids = self.customers_array[:,0]
+        return self.customers_ids
 
     def get_load(self):
-        return self.customers_array[:,3].sum()
+        self.load = self.customers_array[:,3].sum()
+        return self.load
 
     def check_time_constrain(self):
 
+        #current time is between ready time and due date
+        # ready_time <= current time <= due date
+        #initial current time = first customer readytime
+        #ready time row[4]
+        #due date row[5]
+
+        self.time_constrain = True
+        self.current_time = self.customers_array[0,4]
+        for row in self.customers_array:
+            if (not self.current_time <= row[4]) or (not self.current_time<=row[5]):
+                self.time_constrain =False
+
+                return self.time_constrain
+            else:
+                self.current_time+=row[6]
+        return self.time_constrain
+
+    def check_capacity_constrain(self):
+        self.load = self.get_load()
+        if self.load>200:
+            self.capacity_constrain = False
+        else:
+            self.capacity_constrain = True
+            
+        return self.capacity_constrain
 
 
 
+    def get_route_distance(self):
+        
+        #i will get the distance between each customer and the next customer in the array
+        #distance row[7]
+        self.total_distance = 0 
+        for i in range(self.customers_array.shape[0]):
+            if i == self.customers_array.shape[0]-1:
+                break
+
+            distance = get_distance_between_two_points(self.customers_array[i,1],self.customers_array[i,2],self.customers_array[i+1,1],self.customers_array[i+1,2])
+            self.total_distance+=distance
+
+        #calculate distance betwen first customer and depot and last customer and depot 
+        distance_1 = get_distance_between_two_points(self.customers_array[0,1],self.customers_array[0,2],self.depot[1],self.depot[2])
+        distance_2 = get_distance_between_two_points(self.customers_array[-1,1],self.customers_array[-1,2],self.depot[1],self.depot[2])
+
+        self.total_distance += distance_1
+        self.total_distance += distance_2 
+        return self.total_distance
+
+    def update_route_variables(self):
+        self.get_load()
+        self.get_customers_ids()
+        self.get_route_distance()
+        self.check_capacity_constrain()
+        self.check_time_constrain()
+
+    def mutate(self,mutation_rate):
+        #get randomly two indices in the customers array and exchange them 
+        if self.customers_array.shape[0]<=1:
+            return False
+        
+        if random.random() > mutation_rate:
+            return False
+
+        idx_1 = random.randint(0, self.customers_array.shape[0] - 1)
+        idx_2 = random.randint(0, self.customers_array.shape[0] - 1)
+
+        first_row = self.customers_array[idx_1,:]
+        second_row = self.customers_array[idx_2,:]
+
+        self.customers_array[idx_1,:] = second_row
+        self.customers_array[idx_2,:] = first_row 
+        self.update_route_variables()
+        return True
+
+
+class Solution:
+    def __init__(self,routes):
+        self.routes = routes
+        # get total distance 
+        # check feasibility 
+
+    def prevent_duplicated_customers(self):
+        #this function to remove duplicated customers in other routes 
+        #check if customer is another route 
+        # if customers in another route remove the customer in the first route
+        unique_customers =[] 
+        unique_customers_idx = []
+        duplicated_customers = []
+        for route_idx,route in enumerate(self.routes):
+            for customer in route.customers_ids:
+                if customer not in unique_customers:
+                    unique_customers.append(customer)
+                    unique_customers_idx.append(route_idx)
+                else:
+                    duplicated_customers.append({"customer":customer,"route_idx":route_idx})
+
+       for customer,route_idx in enumerate()
+
+    def get_total_solution_distance(self):
+        self.total_distance = 0
+        for route in self.routes:
+            self.total_distance +=route.get_route_distance()
+
+        return self.total_distance 
+
+    def check_feasibility(self):
+        self.time_constrain = True
+        self.capacity_constrain = True
+        for route in self.routes:
+            if not route.check_capacity_constrain():
+                self.capacity_constrain = False
+            if not route.check_time_constrain():
+                self.time_constrain = False
+
+        self.feasibility = self.capacity_constrain * self.time_constrain
+
+        return self.feasibility
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def update_variables(self):
+        self.get_total_solution_distance()
+        self.check_feasibility()
 
 
 
